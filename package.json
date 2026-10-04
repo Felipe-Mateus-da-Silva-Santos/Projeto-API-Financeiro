@@ -13,7 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/Felipe-Mateus-da-Silva-Santos/Projeto-API-Financeiro/issues"
   },
