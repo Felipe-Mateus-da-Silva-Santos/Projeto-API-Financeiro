@@ -40,3 +40,15 @@ API.use(express.json());
 API.get('/usuarios', (req, res) => {
     res.json(usuarios);
 });
+
+API.get('/usuarios:id', (req, res) => {
+const id = Number(req.params.id);
+const usuario = usuarios.find(usuario => usuario.id ===id);
+
+if (!usuario){
+    return res.status(404).json({
+         mensagem: 'Usuário não encontrado'
+    });
+}
+res.json(usuario);
+});
