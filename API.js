@@ -5,13 +5,13 @@ const PORT = 3000;
 API.use(express.json());
 
 const usuarios = [
-    { id: 1, nome: 'Maria da Silva',   email: 'maria@email.com' },
-    { id: 2, nome: 'João dos Santos',  email: 'joao@email.com' },
-    { id: 3, nome: 'Mara Maravilha',   email: 'mara@email.com' },
-    { id: 4, nome: 'Peter Parker',     email: 'peter@email.com' },
-    { id: 5, nome: 'Yudi Itadori',     email: 'Yudi@email.com' }
+    { id: 1, nome: 'Maria da Silva', email: 'maria@email.com' },
+    { id: 2, nome: 'João dos Santos', email: 'joao@email.com' },
+    { id: 3, nome: 'Mara Maravilha', email: 'mara@email.com' },
+    { id: 4, nome: 'Peter Parker', email: 'peter@email.com' },
+    { id: 5, nome: 'Yudi Itadori', email: 'Yudi@email.com' }
 ];
-
+let proximoIdUsuario = 6;
 const contas = [
     // TIPOS: corrente ou poupanca
     { id: 1, nome: 'Conta Principal', tipo: 'corrente', saldoInicial: 1000.00, saldo: 1000.00, idUsuario: 2 },
@@ -103,4 +103,75 @@ API.get('/lancamentos/:id', (req, res) => {
     }
 
     res.json(lancamento);
+});
+//CRUD Usuários
+// R => read
+API.get('/usuarios', (req, res) => {
+    res.json(usuarios);
+});
+
+API.get('/usuarios/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const usuario = usuarios.find(usuario => usuario.id === id);
+    if (!usuario) {
+        return res.status(404).json({
+            mensagem: 'Usuário não encontrado'
+        });
+    }
+    res.json(usuario);
+});
+
+// C => create
+API.post('/usuarios', (req, res) => {
+    const { nome, email } = req.body;
+    const novoUsuario = {
+        id: proximoIdUsuario++,
+        nome: nome,
+        email: email
+    }
+    if (!nome || typeof nome !== 'string' || !email || typeof email !== 'string') {
+    return res.status(400).json({
+        mensagem: 'Os campos "nome" e "email" são obrigatórios'
+    });
+    }
+    usuarios.push(novoUsuario);
+    res.status(201).json(novoUsuario);
+});
+
+//U => Update
+API.put('/usuarios/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const usuario = usuarios.find(usuario => usuario.id === id);
+    if (!usuario) {
+        return res.status(404).json({
+            mensagem: 'Usuário não encontrado'
+        });
+    }
+    const { nome, email } = req.body;
+    if (!nome || typeof nome !== 'string' || !email || typeof email !== 'string') {
+    return res.status(400).json({
+        mensagem: 'Os campos "nome" e "email" são obrigatórios'
+    });
+    }
+
+    usuario.nome = nome;
+    usuario.email = email;
+    res.json(usuario);
+});
+
+//D => delete
+API.delete('/usuarios/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const posicao = usuarios.findIndex(u => u.id === id);
+
+    if (posicao === -1) {
+        return res.status(404).json({
+            mensagem: 'Usuário não encontrado'
+        })
+    };
+    usuarios.splice(posicao, 1);
+    res.status(204).json({
+        mensagem: 'Usuário deletado'
+    });
+
 });
