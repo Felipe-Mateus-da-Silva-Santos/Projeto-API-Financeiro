@@ -2,6 +2,8 @@ const express = require('express');
 const API = express();
 const PORT = 3000;
 
+API.use(express.json());
+
 const usuarios = [
     { id: 1, nome: 'Maria da Silva',   email: 'maria@email.com' },
     { id: 2, nome: 'João dos Santos',  email: 'joao@email.com' },
@@ -33,5 +35,50 @@ const lancamentos = [
     { id: 9, tipo: 'receita', descricao: 'Aporte Investidor', valor: 5000.00, categoria: 'trabalho', data: '2026-10-01', idConta: 6 },
     { id: 10, tipo: 'despesa', descricao: 'Aluguel Escritório', valor: 1500.00, categoria: 'habitacao', data: '2026-10-02', idConta: 6 }
 ];
-API.use(express.json());
+
+API.post('/contas', (req, res) => {
+    const novaConta = req.body;
+
+    contas.push(novaConta);
+
+    res.status(201).json(novaConta);
+});
+
+API.get('/contas/:id', (req, res) => {
+    const id = Number(req.params.id);
+
+    const conta = contas.find(conta => conta.id === id);
+
+    res.json(conta);
+});
+
+API.put('/contas/:id', (req, res) => {
+    const id = Number(req.params.id);
+
+    const conta = contas.find(conta => conta.id === id);
+    
+    if (!contas) {
+        return res.status(404).json("Conta não encontrada");
+    }
+
+    conta.nome = req.body.nome;
+    conta.tipo = req.body.tipo;
+
+    res.json(conta);
+});
+
+API.delete('/contas/:id', (req, res) => {
+    const id = Number(req.params.id);
+
+    const indice = contas.findIndex(conta => conta.id === id);
+
+    if (indice === -1) {
+        return res.status(404).json("Conta não encontrada");
+    }
+
+    contas.splice(indice, 1);
+    
+    res.status(204).send();
+});
+
 
