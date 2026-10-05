@@ -2,6 +2,8 @@ const express = require('express');
 const API = express();
 const PORT = 3000;
 
+API.use(express.json());
+
 const usuarios = [
     { id: 1, nome: 'Maria da Silva',   email: 'maria@email.com' },
     { id: 2, nome: 'João dos Santos',  email: 'joao@email.com' },
@@ -78,3 +80,5 @@ API.delete('/contas/:id', (req, res) => {
     
     res.status(204).send();
 });
+
+
