@@ -35,3 +35,8 @@ const lancamentos = [
 ];
 API.use(express.json());
 
+//CRUD Usuários
+// R => read
+API.get('/usuarios', (req, res) => {
+    res.json(usuarios);
+});
