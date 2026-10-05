@@ -81,7 +81,29 @@ API.delete('/contas/:id', (req, res) => {
     res.status(204).send();
 });
 
+API.post('/lancamentos', (req, res) => {
+    const novoLancamento = req.body;
+    
+    lancamentos.push(novoLancamento);
 
+    res.status(201).json(novoLancamento);
+});
+
+API.get('/lancamentos', (req, res) => {
+    res.json(lancamentos);
+});
+
+API.get('/lancamentos/:id', (req, res) => {
+    const id = Number(req.params.id);
+
+    const lancamento = lancamentos.find(lancamento => lancamento.id === id);
+
+    if (!lancamento) {
+        return res.status(404).json("Lançamento não encontrado");
+    }
+
+    res.json(lancamento);
+});
 //CRUD Usuários
 // R => read
 API.get('/usuarios', (req, res) => {
