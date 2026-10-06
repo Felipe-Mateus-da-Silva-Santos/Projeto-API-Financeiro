@@ -56,7 +56,7 @@ API.put('/contas/:id', (req, res) => {
     const id = Number(req.params.id);
 
     const conta = contas.find(conta => conta.id === id);
-    
+
     if (!contas) {
         return res.status(404).json("Conta não encontrada");
     }
@@ -77,7 +77,7 @@ API.delete('/contas/:id', (req, res) => {
     }
 
     contas.splice(indice, 1);
-    
+
     res.status(204).send();
 });
 
@@ -108,9 +108,9 @@ API.post('/usuarios', (req, res) => {
         email: email
     }
     if (!nome || typeof nome !== 'string' || !email || typeof email !== 'string') {
-    return res.status(400).json({
-        mensagem: 'Os campos "nome" e "email" são obrigatórios'
-    });
+        return res.status(400).json({
+            mensagem: 'Os campos "nome" e "email" são obrigatórios'
+        });
     }
     usuarios.push(novoUsuario);
     res.status(201).json(novoUsuario);
@@ -127,9 +127,9 @@ API.put('/usuarios/:id', (req, res) => {
     }
     const { nome, email } = req.body;
     if (!nome || typeof nome !== 'string' || !email || typeof email !== 'string') {
-    return res.status(400).json({
-        mensagem: 'Os campos "nome" e "email" são obrigatórios'
-    });
+        return res.status(400).json({
+            mensagem: 'Os campos "nome" e "email" são obrigatórios'
+        });
     }
 
     usuario.nome = nome;
@@ -153,3 +153,39 @@ API.delete('/usuarios/:id', (req, res) => {
     });
 
 });
+
+const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+function filtrarLancamentos({ idUsuario, idConta, categoria, inicio, fim }) {
+    if (inicio && !DATA_REGEX.test(inicio)) {
+        return { erro: 'O campo "inicio" deve estar no formato AAAA-MM-DD' };
+    }
+    if (fim && !DATA_REGEX.test(fim)) {
+        return { erro: 'O campo "fim" deve estar no formato AAAA-MM-DD' };
+    }
+    if (inicio && fim && inicio > fim) {
+        return { erro: '"inicio" não pode ser maior que "fim"' };
+    }
+
+    let resultado = lancamentos;
+
+    if (idUsuario) {
+        const idsContas = contas
+            .filter(c => c.idUsuario === Number(idUsuario))
+            .map(c => c.id);
+        resultado = resultado.filter(l => idsContas.includes(l.idConta));
+    }
+    if (idConta) {
+        resultado = resultado.filter(l => l.idConta === Number(idConta));
+    }
+    if (categoria) {
+        resultado = resultado.filter(l => l.categoria === categoria);
+    }
+    if (inicio) {
+        resultado = resultado.filter(l => l.data >= inicio);
+    }
+    if (fim) {
+        resultado = resultado.filter(l => l.data <= fim);
+    }
+
+    return { resultado };
+}
