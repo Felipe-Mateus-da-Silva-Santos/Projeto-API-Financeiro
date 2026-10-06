@@ -186,6 +186,15 @@ function filtrarLancamentos({ idUsuario, idConta, categoria, inicio, fim }) {
     if (fim) {
         resultado = resultado.filter(l => l.data <= fim);
     }
-
     return { resultado };
 }
+
+API.get('/lancamentos', (req, res) => {
+    const { erro, resultado } = filtrarLancamentos(req.query);
+    if (erro) {
+        return res.status(400).json({ mensagem: erro });
+    }
+    
+    const ordenado = [...resultado].sort((a, b) => b.data.localeCompare(a.data));
+    res.json(ordenado);
+});
