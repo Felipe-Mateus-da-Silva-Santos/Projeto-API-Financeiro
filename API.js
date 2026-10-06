@@ -194,7 +194,44 @@ API.get('/lancamentos', (req, res) => {
     if (erro) {
         return res.status(400).json({ mensagem: erro });
     }
-    
+
     const ordenado = [...resultado].sort((a, b) => b.data.localeCompare(a.data));
     res.json(ordenado);
+});
+
+API.get('/lancamentos/total', (req, res) => {
+    const { erro, resultado } = filtrarLancamentos(req.query);
+    if (erro) {
+        return res.status(400).json({ mensagem: erro });
+    }
+
+    let receitas = 0;
+    let despesas = 0;
+    const porCategoria = {};
+
+    for (const l of resultado) {
+        if (!porCategoria[l.categoria]) {
+            porCategoria[l.categoria] = { receitas: 0, despesas: 0 };
+        }
+        if (l.tipo === 'receita') {
+            receitas += l.valor;
+            porCategoria[l.categoria].receitas += l.valor;
+        } else {
+            despesas += l.valor;
+            porCategoria[l.categoria].despesas += l.valor;
+        }
+    }
+
+    for (const cat in porCategoria) {
+        porCategoria[cat].receitas = arredondar(porCategoria[cat].receitas);
+        porCategoria[cat].despesas = arredondar(porCategoria[cat].despesas);
+    }
+
+    res.json({
+        quantidade: resultado.length,
+        receitas: arredondar(receitas),
+        despesas: arredondar(despesas),
+        saldo: arredondar(receitas - despesas),
+        porCategoria
+    });
 });
