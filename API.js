@@ -257,3 +257,5 @@ API.get('/lancamentos/total', (req, res) => {
         porCategoria
     });
 });
+
+API.listen(3000, () => console.log('API em http://localhost:3000'));
