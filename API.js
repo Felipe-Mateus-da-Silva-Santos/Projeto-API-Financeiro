@@ -1,4 +1,3 @@
-const express = require('express');
 const API = express();
 const PORT = 3000;
 
@@ -21,6 +20,7 @@ const contas = [
     { id: 5, nome: 'Carteira Diária', tipo: 'corrente', saldoInicial: 350.00, saldo: 350.00, idUsuario: 4 },
     { id: 6, nome: 'Conta PJ', tipo: 'corrente', saldoInicial: 8000.00, saldo: 8000.00, idUsuario: 5 }
 ];
+let proximoIdConta = 7;
 
 const lancamentos = [
     // TIPO receita ou despesa | DATA: AAAA-MM-DD
@@ -35,38 +35,140 @@ const lancamentos = [
     { id: 9, tipo: 'receita', descricao: 'Aporte Investidor', valor: 5000.00, categoria: 'trabalho', data: '2026-10-01', idConta: 6 },
     { id: 10, tipo: 'despesa', descricao: 'Aluguel Escritório', valor: 1500.00, categoria: 'habitacao', data: '2026-10-02', idConta: 6 }
 ];
+let proximoIdLancamento = 11;
 
+// CREATE
 API.post('/contas', (req, res) => {
-    const novaConta = req.body;
+    const { nome, tipo, saldoInicial, idUsuario } = req.body;
+
+    if (typeof nome !== 'string' || !nome.trim()) {
+        return res.status(400).json({
+            mensagem: 'O nome da conta é obrigatório'
+        });
+    }
+
+    if (!['corrente', 'poupanca'].includes(tipo)) {
+        return res.status(400).json({
+            mensagem: 'O tipo deve ser corrente ou poupanca'
+        });
+    }
+
+    if (typeof saldoInicial !== 'number' ||
+        !Number.isFinite(saldoInicial) || saldoInicial < 0) {
+        return res.status(400).json({
+            mensagem: 'O saldo inicial deve ser um número maior ou igual a zero'
+        });
+    }
+
+    const usuarioExiste = usuarios.some(
+        usuario => usuario.id === idUsuario
+    );
+
+    if (!usuarioExiste) {
+        return res.status(404).json({
+            mensagem: 'Usuário não encontrado'
+        });
+    }
+
+    const quantidadeContas = contas.filter(
+        conta => conta.idUsuario === idUsuario
+    ).length;
+
+    if (quantidadeContas >= 3) {
+        return res.status(400).json("O usuário já possui o limite de três contas"
+        );
+    }
+
+    const novaConta = {
+        id: proximoIdConta++,
+        nome: nome.trim(),
+        tipo,
+        saldoInicial,
+        saldo: saldoInicial,
+        idUsuario
+    };
 
     contas.push(novaConta);
-
     res.status(201).json(novaConta);
 });
 
+//READ
+API.get('/contas', (req, res) => {
+    const { idUsuario } = req.query;
+
+    let resultado = contas;
+
+    if (idUsuario !== undefined) {
+        const id = Number(idUsuario);
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                mensagem: 'ID do usuário inválido'
+            });
+        }
+
+        const usuarioExiste = usuarios.some(
+            usuario => usuario.id === id
+        );
+
+        if (!usuarioExiste) {
+            return res.status(404).json({
+                mensagem: 'Usuário não encontrado'
+            });
+        }
+
+        resultado = contas.filter(
+            conta => conta.idUsuario === id
+        );
+    }
+
+    res.json(resultado);
+});
+
 API.get('/contas/:id', (req, res) => {
+
     const id = Number(req.params.id);
-
     const conta = contas.find(conta => conta.id === id);
-
+    if (!conta) {
+        return res.status(404).json({
+            mensagem: 'Conta não encontrada'
+        });
+    }
     res.json(conta);
 });
 
+//UPDATE
 API.put('/contas/:id', (req, res) => {
     const id = Number(req.params.id);
 
     const conta = contas.find(conta => conta.id === id);
 
-    if (!contas) {
+    if (!conta) {
         return res.status(404).json("Conta não encontrada");
     }
 
     conta.nome = req.body.nome;
     conta.tipo = req.body.tipo;
 
+    if (typeof nome !== 'string' || !nome.trim()) {
+        return res.status(400).json({
+            mensagem: 'O nome da conta é obrigatório'
+        });
+    }
+
+    if (!['corrente', 'poupanca'].includes(tipo)) {
+        return res.status(400).json({
+            mensagem: 'O tipo deve ser corrente ou poupanca'
+        });
+    }
+
+    conta.nome = nome.trim();
+    conta.tipo = tipo;
+
     res.json(conta);
 });
 
+//DELETE
 API.delete('/contas/:id', (req, res) => {
     const id = Number(req.params.id);
 
@@ -76,34 +178,196 @@ API.delete('/contas/:id', (req, res) => {
         return res.status(404).json("Conta não encontrada");
     }
 
+    const possuiLancamentos = lancamentos.some(
+        lancamento => lancamento.idConta === id
+    );
+
+    if (possuiLancamentos) {
+        return res.status(400).json("Não é possível excluir uma conta que possui lançamentos");
+    }
+
     contas.splice(indice, 1);
 
     res.status(204).send();
 });
 
+
+//CREATE
 API.post('/lancamentos', (req, res) => {
-    const novoLancamento = req.body;
+    const { tipo, descricao, valor, categoria, data, idConta} = req.body;
     
+    if (!['receita', 'despesa'].incluides(tipo)){
+        return res.status(400).json("O tipo deve ser receita ou despesa")
+    }
+
+    if(typeof descricao !== 'string' || !descricao.trim()){
+        return res.status(400).json("A descrição é obrigatória")
+    }
+
+    if(typeof categoria !== 'string' || !categoria.trim()) {
+        return res.status(400).json("A categoria é obrigatória");
+    }
+     
+    if (typeof valor !== 'number' || !Number.isFinite(valor) || valor <=0){
+        return res.status(400).json("O valor deve ser um numero maior que zero");
+    }
+
+    const DATA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+    if (typeof data !== 'string' || !DATA_REGEX.test(data)){
+        return res.status(400).json("estar no formato AAAA-MM-DD")
+    }
+
+     const conta = contas.find(conta => conta.id === idConta);
+
+    if (!conta) {
+        return res.status(404).json("Conta não encontrada");
+    }
+
+    const valorCentavos = Math.round(valor * 100);
+    const saldoCentavos = Math.round(conta.saldo * 100);
+
+    if (tipo === 'despesa' && valorCentavos > saldoCentavos) {
+        return res.status(400).json("Saldo insuficiente para realizar esta despesa");
+    }
+
+    const novoLancamento = {
+        id: proximoIdLancamento++,
+        tipo,
+        descricao: descricao.trim(),
+        valor: valorCentavos / 100,
+        categoria: categoria.trim(),
+        data,
+        idConta
+    };
+
+    if (tipo === 'receita') {
+        conta.saldo = (saldoCentavos + valorCentavos) / 100;
+    } else {
+        conta.saldo = (saldoCentavos - valorCentavos) / 100;
+    }
+
     lancamentos.push(novoLancamento);
 
-    res.status(201).json(novoLancamento);
+    res.status(201).json({
+        mensagem: 'Lançamento cadastrado com sucesso',
+        lancamento: novoLancamento,
+        novoSaldo: conta.saldo
+    });
+
+
 });
 
+//READ
 API.get('/lancamentos', (req, res) => {
-    res.json(lancamentos);
+
+    const { idUsuario, idConta, categoria, inicio, fim } = req.query;
+
+    const resultado = filtrarLancamentos({
+        idUsuario,
+        idConta,
+        categoria,
+        inicio,
+        fim
+    });
+
+    if (resultado.erro) {
+        return res.status(400).json({
+            mensagem: resultado.erro
+        });
+    }
+
+    const lancamentosFiltrados = resultado.resultado;
+
+    lancamentosFiltrados.sort((a, b) =>
+        new Date(b.data) - new Date(a.data)
+    );
+
+    res.json(lancamentosFiltrados);
+});
+
+API.get('/lancamentos/total', (req, res) => {
+
+    const { idUsuario, idConta, categoria, inicio, fim } = req.query;
+
+    const resultado = filtrarLancamentos({
+        idUsuario,
+        idConta,
+        categoria,
+        inicio,
+        fim
+    });
+
+    if (resultado.erro) {
+        return res.status(400).json({
+            mensagem: resultado.erro
+        });
+    }
+
+    const lancamentosFiltrados = resultado.resultado;
+
+    let receitas = 0;
+    let despesas = 0;
+    const porCategoria = {};
+
+    lancamentosFiltrados.forEach(lancamento => {
+
+        if (lancamento.tipo === 'receita') {
+            receitas += lancamento.valor;
+        } else if (lancamento.tipo === 'despesa') {
+            despesas += lancamento.valor;
+        }
+
+        if (!porCategoria[lancamento.categoria]) {
+            porCategoria[lancamento.categoria] = {
+                receitas: 0,
+                despesas: 0
+            };
+        }
+
+        if (lancamento.tipo === 'receita') {
+            porCategoria[lancamento.categoria].receitas += lancamento.valor;
+        } else if (lancamento.tipo === 'despesa') {
+            porCategoria[lancamento.categoria].despesas += lancamento.valor;
+        }
+    });
+
+    receitas = Math.round((receitas + Number.EPSILON) * 100) / 100;
+    despesas = Math.round((despesas + Number.EPSILON) * 100) / 100;
+
+    const saldo = Math.round((receitas - despesas + Number.EPSILON) * 100) / 100;
+
+    Object.keys(porCategoria).forEach(categoria => {
+        porCategoria[categoria].receitas =
+            Math.round((porCategoria[categoria].receitas + Number.EPSILON) * 100) / 100;
+
+        porCategoria[categoria].despesas =
+            Math.round((porCategoria[categoria].despesas + Number.EPSILON) * 100) / 100;
+    });
+
+    res.json({
+        quantidade: lancamentosFiltrados.length,
+        receitas,
+        despesas,
+        saldo,
+        porCategoria
+    });
 });
 
 API.get('/lancamentos/:id', (req, res) => {
+
     const id = Number(req.params.id);
 
-    const lancamento = lancamentos.find(lancamento => lancamento.id === id);
+    const lancamento = lancamentos.find(l => l.id === id);
 
     if (!lancamento) {
-        return res.status(404).json("Lançamento não encontrado");
+        return res.status(404).json({
+            mensagem: 'Lançamento não encontrado'
+        });
     }
 
     res.json(lancamento);
 });
+
 //CRUD Usuários
 // R => read
 API.get('/usuarios', (req, res) => {
@@ -124,16 +388,29 @@ API.get('/usuarios/:id', (req, res) => {
 // C => create
 API.post('/usuarios', (req, res) => {
     const { nome, email } = req.body;
-    const novoUsuario = {
-        id: proximoIdUsuario++,
-        nome: nome,
-        email: email
-    }
-    if (!nome || typeof nome !== 'string' || !email || typeof email !== 'string') {
+    
+    if (!nome || typeof nome !== 'string' || !nome.trim() ||
+        !email || typeof email !== 'string' || !email.trim()) {
         return res.status(400).json({
             mensagem: 'Os campos "nome" e "email" são obrigatórios'
         });
     }
+
+    const emailExiste = usuarios.find(
+        usuario => usuario.email.toLocaleLowerCase() === email.trim().toLocaleLowerCase()
+    );
+
+    if (emailExiste){
+        return res.status(400).json({
+            mensagem: 'Esse email já está cadastrado'
+        });
+    }
+    const novoUsuario = {
+        id: proximoIdUsuario++,
+        nome: nome,
+        email: email
+    };
+
     usuarios.push(novoUsuario);
     res.status(201).json(novoUsuario);
 });
@@ -148,9 +425,21 @@ API.put('/usuarios/:id', (req, res) => {
         });
     }
     const { nome, email } = req.body;
-    if (!nome || typeof nome !== 'string' || !email || typeof email !== 'string') {
+
+    if (typeof nome !== 'string' || !nome.trim() ||
+        typeof email !== 'string' || !email.trim()) {
         return res.status(400).json({
             mensagem: 'Os campos "nome" e "email" são obrigatórios'
+        });
+    }
+     const emailExiste = usuarios.find(
+        u => u.email.toLowerCase() === email.trim().toLowerCase()
+        && u.id !== id
+    );
+
+    if (emailExiste) {
+        return res.status(400).json({
+            mensagem: 'Este email já está cadastrado por outro usuário'
         });
     }
 
