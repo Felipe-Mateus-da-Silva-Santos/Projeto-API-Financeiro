@@ -1,58 +1,42 @@
-const usuarios = [
-  { id: 1, nome: "Maria da Silva", email: "maria@email.com" },
-  { id: 2, nome: "João dos Santos", email: "joao@email.com" },
-  { id: 3, nome: "Mara Maravilha", email: "mara@email.com" },
-  { id: 4, nome: "Peter Parker", email: "peter@email.com" },
-  { id: 5, nome: "Yudi Itadori", email: "Yudi@email.com" },
-];
+import { ObjectId } from 'mongodb';
+import { obterBanco } from '../config/database.js';
 
-let proximoIdUsuario = 6;
+function colecao() {
+  return obterBanco().collection('usuarios');
+}
 
 // READ
-export function listarUsuarios() {
-  return usuarios;
+export async function listarUsuarios() {
+  return colecao().find().toArray();
 }
 
-export function buscarUsuarioPorId(id) {
-  return usuarios.find((usuario) => usuario.id === id);
-}
-
-// CREATE
-export function criarUsuario(nome, email) {
-  const novoUsuario = {
-    id: proximoIdUsuario++,
-    nome,
-    email,
-  };
-
-  usuarios.push(novoUsuario);
-
-  return novoUsuario;
-}
-
-// UPDATE
-export function atualizarUsuario(id, nome, email) {
-  const usuario = buscarUsuarioPorId(id);
-
-  if (!usuario) {
+export async function buscarUsuarioPorId(id) {
+   if (!ObjectId.isValid(id)) {
     return null;
-  }
-
-  usuario.nome = nome;
-  usuario.email = email;
-
-  return usuario;
+    }
+    return colecao().findOne({ _id: new ObjectId(id) });
+}
+// Inserir
+export async function inserir (usuario){
+  const usuarios = await colecao();
+  const resultado = await usuarios.insertOne(usuario);
 }
 
-// DELETE
-export function deletarUsuario(id) {
-  const posicao = usuarios.findIndex((usuario) => usuario.id === id);
-
-  if (posicao === -1) {
+// Atualizar
+export async function atualizar (id, dados) {
+  if (!ObjectId.isValid(id)){
     return false;
   }
-
-  usuarios.splice(posicao, 1);
-
-  return true;
+   const resultado = await colecao().updateOne({ _id: new ObjectId(id) }, { $set: dados });
+   return resultado.matchedCount > 0;
+  
 }
+
+// Remover
+export async function remover(id) {
+  if (!ObjectId.isValid(id)) {
+    return false;
+  }
+  const resultado = await colecao().deleteOne({ _id: new ObjectId(id) });
+  return resultado.deletedCount > 0;
+ }

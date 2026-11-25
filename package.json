@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/Felipe-Mateus-da-Silva-Santos/Projeto-API-Financeiro#readme",
   "dependencies": {
-    "express": "^5.3.0"
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "mongoose": "^9.13.0"
   }
 }
